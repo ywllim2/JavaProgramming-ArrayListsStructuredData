@@ -1,0 +1,110 @@
+import edu.duke.*;
+
+public class CaesarCipher {
+    private String alphabet;
+    private String shiftAlpha;
+    private int mainKey;
+    public CaesarCipher(int key){
+        mainKey = key; //do not declare int here again because you have already done so above
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //do not declare String again
+        shiftAlpha = alphabet.substring(key) + alphabet.substring(0,key);
+    }
+    
+    public String encrypt(String s){
+        StringBuilder sb = new StringBuilder(s);
+        int idx;
+        for (int i=0; i < sb.length(); i++){
+            char ch = sb.charAt(i);
+            if (Character.isLowerCase(ch)){
+                char upperCh = Character.toUpperCase(ch);
+                idx = alphabet.indexOf(upperCh);
+                if (idx != -1){
+                    char newCh = shiftAlpha.charAt(idx);
+                    sb.setCharAt(i, Character.toLowerCase(newCh));
+                 //   System.out.println(newCh);
+                }
+            }
+            else{
+                idx = alphabet.indexOf(ch);
+                if (idx != -1){
+                    char newCh = shiftAlpha.charAt(idx);
+                    sb.setCharAt(i, newCh);
+                  //  System.out.println(newCh);
+                }
+            }
+        }
+        return sb.toString();
+    }
+    
+    public String decrypt(String input){
+        
+        CaesarCipher cc2 = new CaesarCipher(26-mainKey); //cannot replace "mainKey" with "key" because you havent declared that as a private variable yet. "Key" is the argument for constructor.
+        String output = cc2.encrypt(input);
+        
+        return output;
+    }
+    
+    public void testEncrypt(){
+        String message = "Hello can you hear me? If you can, say yes!";
+        String encryptedMessage = encrypt(message);
+        System.out.println(encryptedMessage);
+        String decryptedMessage = decrypt(encryptedMessage);
+        System.out.println(decryptedMessage);
+    }
+  
+}
+
+public class TestCaesarCipher {
+    public int idxMax(int[] countAlpha){
+        int maxIdx = 0;
+        for (int i = 0; i < countAlpha.length; i++){
+            if (countAlpha[i] > countAlpha[maxIdx]){
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
+    }
+    
+    public int[] countLetters(String s){
+        int[] count = new int[26];
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (int i=0; i < s.length(); i++){
+            char ch = s.charAt(i);
+            char upperCh = Character.toUpperCase(ch);
+            int idx = alphabet.indexOf(upperCh);
+            if (idx != -1){
+                count[idx] += 1;
+            }
+        }
+        return count;
+    }
+    
+    public void simpleTests(){
+        FileResource fr = new FileResource();
+        String s = fr.asString();
+        CaesarCipher cc = new CaesarCipher(18);
+        String encrypted = cc.encrypt(s);
+        System.out.println(encrypted);
+        String decrypted = cc.decrypt(encrypted);
+        System.out.println("Decrypted: " + decrypted);
+        
+        String decryptedOutput = breakCaesarCipher(encrypted);
+        System.out.println("Another decryption:  " + decryptedOutput);
+    }
+    
+    public String breakCaesarCipher(String input){
+        
+        int[] counts = countLetters(input);
+        int maxIdx = idxMax(counts);
+        int deKey = maxIdx - 4;
+        if (maxIdx < 4){
+            deKey = 26 + (maxIdx - 4);
+        }
+        
+        CaesarCipher cc = new CaesarCipher(26-deKey);
+        String decryptedOutput = cc.encrypt(input);
+        
+        return decryptedOutput;
+    }
+}
+
