@@ -1,0 +1,141 @@
+import edu.duke.*;
+public class CaesarCipherTwo {
+    private String alphabet;
+    private String shiftedAlphabet1;
+    private String shiftedAlphabet2;
+    private int mainKey1;
+    private int mainKey2;
+    
+    public CaesarCipherTwo(int key1, int key2){
+        mainKey1 = key1;
+        mainKey2 = key2;
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        shiftedAlphabet1 = alphabet.substring(key1) + alphabet.substring(0,key1);
+        shiftedAlphabet2 = alphabet.substring(key2) + alphabet.substring(0,key2);
+    }
+    
+    public String encrypt(String input){
+        StringBuilder sb = new StringBuilder(input);
+        int idx = 0;
+        for (int i = 0; i < sb.length(); i++){
+            char ch = sb.charAt(i);
+            if (Character.isLowerCase(ch)){
+                ch = Character.toUpperCase(ch);
+                
+                idx = alphabet.indexOf(ch);
+                if (idx != -1){
+                    if (i%2 == 0){
+                        char newCh = shiftedAlphabet1.charAt(idx);
+                        newCh = Character.toLowerCase(newCh);
+                        sb.setCharAt(i, newCh);
+                    }
+                    else{
+                        char newCh = shiftedAlphabet2.charAt(idx);
+                        newCh = Character.toLowerCase(newCh);
+                        sb.setCharAt(i, newCh);
+                    }
+                }
+            }
+            else{
+                idx = alphabet.indexOf(ch);
+                if (idx != -1){
+                    if (i%2 == 0){
+                        char newCh = shiftedAlphabet1.charAt(idx);
+                        sb.setCharAt(i, newCh);
+                    }
+                    else{
+                        char newCh = shiftedAlphabet2.charAt(idx);
+                        sb.setCharAt(i, newCh);
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
+    
+    public String decrypt(String input){
+        CaesarCipherTwo cc = new CaesarCipherTwo(26-mainKey1, 26-mainKey2);
+        String decrypted = cc.encrypt(input);
+        return decrypted;
+    }
+    
+    
+    
+    
+ }
+                
+import edu.duke.*;
+public class TestCaesarCipherTwo {
+    private String halfOfString(String message, int start){
+        String output = "";
+        int i = start;
+        while (i < message.length()){
+            char ch = message.charAt(i);
+            output = output + ch;
+            i += 2;
+        }
+       return output;
+    }
+    
+    private int idxMax(int[] countAlpha){
+        int maxIdx = 0;
+        for (int i = 0; i < countAlpha.length; i++){
+            if (countAlpha[i] > countAlpha[maxIdx]){
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
+    }
+    
+    private int[] countLetters(String s){
+        int[] count = new int[26];
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (int i=0; i < s.length(); i++){
+            char ch = s.charAt(i);
+            char upperCh = Character.toUpperCase(ch);
+            int idx = alphabet.indexOf(upperCh);
+            if (idx != -1){
+                count[idx] += 1;
+            }
+        }
+        return count;
+    }
+    
+    public String breakCaesarCipher(String s){
+        String s1 = halfOfString(s,0);
+        String s2 = halfOfString(s,1);
+        int[] counts1 = countLetters(s1);
+        int idxMax1 = idxMax(counts1); //idxMax corresponds to "E" in the actual alphabet in s1
+        int[] counts2 = countLetters(s2);
+        int idxMax2 = idxMax(counts2);
+        
+        int deKey1 = idxMax1 - 4;
+        int deKey2 = idxMax2 - 4;
+        
+        if (idxMax1 < 4){
+            deKey1 = 26 + (idxMax1 - 4);
+        }
+        if (idxMax2 < 4){
+            deKey2 = 26 + (idxMax2 - 4);
+        }
+        
+        CaesarCipherTwo cc = new CaesarCipherTwo(deKey1, deKey2);
+        String decryptedBreak = cc.decrypt(s); //here, if you use cc.encrypt(s), then your constructor cc above should use 26-deKey1, 26-deKey2;
+        System.out.println("the keys are: " + (deKey1) + " " + (deKey2));
+        return decryptedBreak;
+    }
+        
+    
+    public void simpleTests(){
+        FileResource fr = new FileResource();
+        String s = fr.asString();
+        CaesarCipherTwo cc = new CaesarCipherTwo(17, 3);
+        String encrypted = cc.encrypt(s);
+        String decrypted = cc.decrypt(encrypted);
+        String decryptedBreak = breakCaesarCipher(encrypted);
+        System.out.println("Encrypted message: " + encrypted);
+        System.out.println("Decrypted message: " + decrypted);
+        System.out.println("Decrypted message w/o knowing keys: " + decryptedBreak);
+    }
+
+}            
