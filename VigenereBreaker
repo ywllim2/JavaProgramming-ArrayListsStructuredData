@@ -1,0 +1,166 @@
+import java.util.*;
+import edu.duke.*;
+//import org.apache.commons.csv.*;
+import java.io.*;
+
+public class VigenereBreaker {
+    public String sliceString(String message, int whichSlice, int totalSlices) {
+        StringBuilder sb = new StringBuilder(message);
+        String sliceOutput = "";
+        for(int i = whichSlice; i < sb.length(); i+=totalSlices){
+             char ch = sb.charAt(i);
+             sliceOutput += ch;
+        }
+        return sliceOutput;
+    }
+
+    public int[] tryKeyLength(String encrypted, int klength, char mostCommon) {
+        int[] key = new int[klength];
+        int i = 0;
+        CaesarCracker ck = new CaesarCracker(mostCommon);
+        for(i=0; i<klength; i++){
+            String slice = sliceString(encrypted, i, klength);
+            //char firstChar = slice.charAt(0);
+            int dkey = ck.getKey(slice);
+            key[i] = dkey;
+         //   System.out.println("key " + key[i]);
+         //   System.out.println("dkey " + dkey);
+        }
+        return key;
+    }
+
+    public void breakVigenere () {
+        FileResource fr = new FileResource();
+        String frString = fr.asString();
+        int[] keyArray = tryKeyLength(frString, 4, 'e');
+        VigenereCipher cipher = new VigenereCipher(keyArray);
+        String decrypted = cipher.decrypt(frString);
+        System.out.println("decrypted: " + decrypted.substring(0,100));
+        System.out.println("keyarray: " + Arrays.toString(keyArray));
+    }
+    
+    public HashSet<String> readDictionary(FileResource fr){
+        HashSet<String> dict = new HashSet<String>();
+        for(String line :  fr.lines()){
+            line = line.toLowerCase();
+            dict.add(line);
+        }
+        return dict;
+    }
+    
+    public int countRealWords(HashSet dict, String message){
+        int count = 0;
+        ArrayList<String> seen = new ArrayList<String>();
+        for(String word : message.split("\\W")){
+            if(dict.contains(word.toLowerCase())){
+                count+=1;
+            //    seen.add(word);
+            }
+        }
+        
+        return count;
+    }
+    
+    public int breakForLanguage(String encrypted, HashSet<String> dict){
+        String output = "";
+        int count = 0;
+        int maxCount = 0;
+        int keyLength = 0;
+        for (int i=1; i<101; i++){
+            int[] keyArray = tryKeyLength(encrypted, i, 'e'); //this is for English
+            VigenereCipher cipher = new VigenereCipher(keyArray);
+            String decrypted = cipher.decrypt(encrypted);
+            count = countRealWords(dict, decrypted);
+           if(count > maxCount){
+                maxCount = count;
+                output = decrypted;
+                keyLength = i;
+            }
+        }
+        
+        return maxCount;
+    }
+    
+    public void breakVigenere2 () {
+        FileResource fr = new FileResource();
+        String frString = fr.asString();
+        FileResource frDict = new FileResource();
+        HashSet<String> dict = readDictionary(frDict); 
+        int output = breakForLanguage(frString, dict);
+        System.out.println("decrypted: " + output);
+     //   System.out.println("keyarray: " + Arrays.toString(keyArray));
+    }
+    
+    public char mostCommonCharIn(HashSet<String> words){
+        int[] alphaCount = new int[26];
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        alphabet = alphabet.toLowerCase();
+        for(String word : words){
+            for(int i=0; i<word.length(); i++){
+                char c = word.charAt(i);
+                c = Character.toLowerCase(c);
+                int idx = alphabet.indexOf(c);
+                if (idx != -1){
+                    alphaCount[idx] += 1;
+            }
+           }
+        }
+        int maxCount = 0;
+        int maxIdx = 0;
+        for(int j = 0; j < alphaCount.length; j++){
+            if (alphaCount[j] > maxCount){
+                maxCount = alphaCount[j];
+                maxIdx = j;
+            }
+        }
+        
+        char maxChar = alphabet.charAt(maxIdx);
+        
+        return maxChar;
+            
+    }
+    
+    public void breakForAllLanguages(String encrypted, HashMap<String, HashSet<String>> languages){
+        String output = "";
+        int count = 0;
+        int maxCount = 0;
+        int keyLength = 0;
+        String lang = "";
+        for (int i=1; i<101; i++){
+            for(String language : languages.keySet()){
+                HashSet<String> dict = languages.get(language);
+                char commonChar = mostCommonCharIn(dict);
+                int[] keyArray = tryKeyLength(encrypted, i, commonChar); 
+                VigenereCipher cipher = new VigenereCipher(keyArray);
+                String decrypted = cipher.decrypt(encrypted);
+                count = countRealWords(dict, decrypted);
+                if(count > maxCount){
+                    maxCount = count;
+                    output = decrypted;
+                    keyLength = i;
+                    lang = language;
+                }
+            }
+        }
+        System.out.println("Decrypted: " + output.substring(0,300));
+        System.out.println("Language: " + lang);
+    }
+    
+    public void breakVigenere3 () {
+        FileResource fr = new FileResource();
+        String frString = fr.asString();
+        DirectoryResource dr = new DirectoryResource();
+        HashMap<String, HashSet<String>> dictMap = new HashMap<String, HashSet<String>>();
+        for (File f: dr.selectedFiles()){ //to use File, import io
+            FileResource frDict = new FileResource(f);
+            String lang = f.getName(); //to use getName, import io
+            HashSet<String> dict = readDictionary(frDict);
+            if (!dictMap.containsKey(lang)){
+                dictMap.put(lang, dict);
+            }
+        }
+        breakForAllLanguages(frString, dictMap);
+        
+     
+    }
+ }
